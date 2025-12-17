@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Coding Round - MOCKMATE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+
+    <style>
+      /* --- THEME VARIABLES --- */
+      :root {
+        --bg-dark: #1e1e1e;
+        --bg-panel: #252526;
+        --bg-editor: #272822;
+        --text-main: #d4d4d4;
+        --text-accent: #9cdcfe;
+        --primary: #0e639c;
+        --primary-hover: #1177bb;
+        --success: #6a9955;
+        --error: #f48771;
+        --border: #3c3c3c;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Consolas", "Monaco", "Courier New", monospace;
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* --- HEADER --- */
+      .header {
+        height: 50px;
+        background: #333333;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .brand {
+        font-weight: bold;
+        color: #fff;
+        letter-spacing: 1px;
+      }
+      .timer {
+        font-size: 14px;
+        color: #ccc;
+      }
+
+      /* --- MAIN LAYOUT --- */
+      .workspace {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* LEFT PANEL: Problem & Output */
+      .panel-left {
+        width: 35%;
+        background: var(--bg-panel);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .tab-header {
+        padding: 10px 20px;
+        background: #2d2d2d;
+        font-size: 13px;
+        text-transform: uppercase;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border);
+        color: #ccc;
+      }
+
+      .content-box {
+        padding: 20px;
+      }
+
+      h2 {
+        font-size: 16px;
+        margin-bottom: 10px;
+        color: #fff;
+      }
+      p {
+        font-size: 14px;
+        line-height: 1.5;
+        color: #ccc;
+        margin-bottom: 15px;
+      }
+
+      /* markdown render styles */
+      .hint-box,
+      #feedbackText {
+        font-family: inherit;
+        font-size: 13px;
+        color: #e6e6e6;
+        line-height: 1.5;
+      }
+      .hint-box table,
+      #feedbackText table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      .hint-box th,
+      .hint-box td,
+      #feedbackText th,
+      #feedbackText td {
+        border: 1px solid #3c3c3c;
+        padding: 6px;
+        text-align: left;
+        font-size: 13px;
+      }
+
+      .hint-box {
+        background: #3c3c3c;
+        border-left: 3px solid #dcdcaa;
+        padding: 10px;
+        margin-top: 15px;
+        font-size: 13px;
+        display: none;
+      }
+
+      /* Results Area */
+      .results-area {
+        border-top: 1px solid var(--border);
+        margin-top: auto;
+        background: #1e1e1e;
+        padding: 20px;
+      }
+      .score-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+      .score-pass {
+        background: rgba(106, 153, 85, 0.2);
+        color: var(--success);
+        border: 1px solid var(--success);
+      }
+      .score-fail {
+        background: rgba(244, 135, 113, 0.2);
+        color: var(--error);
+        border: 1px solid var(--error);
+      }
+
+      .test-case {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        padding: 6px 0;
+        border-bottom: 1px solid #333;
+      }
+      .pass {
+        color: var(--success);
+      }
+      .fail {
+        color: var(--error);
+      }
+
+      /* RIGHT PANEL: Editor */
+      .panel-right {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      #editor {
+        flex: 1;
+        font-size: 14px;
+      }
+
+      /* --- ACTION BAR --- */
+      .action-bar {
+        height: 50px;
+        background: #333;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 20px;
+        gap: 12px;
+      }
+
+      .btn {
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: background 0.2s;
+      }
+      .btn-secondary {
+        background: #444;
+        color: #fff;
+      }
+      .btn-secondary:hover {
+        background: #555;
+      }
+
+      .btn-primary {
+        background: var(--success);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #568c42;
+      }
+
+      .btn-submit {
+        background: var(--primary);
+        color: #fff;
+      }
+      .btn-submit:hover {
+        background: var(--primary-hover);
+      }
+
+      /* Spinner */
+      .spinner {
+        display: none;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #fff;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="brand">MOCKMATE IDE</div>
+      <div class="timer">Python 3.9</div>
+    </div>
+
+    <div class="workspace">
+      <div class="panel-left">
+        <div class="tab-header">Problem Statement</div>
+        <div class="content-box">
+          <h2>Challenge</h2>
+          <p id="questionText">{{ question }}</p>
+
+          <button
+            class="btn btn-secondary"
+            style="font-size: 11px"
+            onclick="getHint()"
+          >
+            Need a Hint?
+          </button>
+          <div id="hintBox" class="hint-box"></div>
+        </div>
+
+        <div class="results-area" id="resultsArea" style="display: none">
+          <div
+            class="tab-header"
+            style="
+              background: transparent;
+              padding-left: 0;
+              margin-bottom: 10px;
+            "
+          >
+            Output
+          </div>
+
+          <div id="scoreDisplay"></div>
+          <p id="feedbackText" style="font-size: 13px; color: #ccc"></p>
+
+          <div style="margin-top: 10px">
+            <div
+              class="tab-header"
+              style="
+                background: transparent;
+                padding: 0;
+                font-size: 11px;
+                margin-bottom: 5px;
+              "
+            >
+              Test Cases
+            </div>
+            <div id="testCasesList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-right">
+        <div id="editor">def solution(): # Write your code here pass</div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="runCode()">
+        <span id="runText">Run & Evaluate</span>
+        <span id="runSpinner" class="spinner"></span>
+      </button>
+
+      <button class="btn btn-submit" onclick="finishSession()">
+        Finish Interview
+      </button>
+    </div>
+
+    <script>
+      // 1. Initialize Ace Editor
+      const editor = ace.edit("editor");
+      editor.setTheme("ace/theme/monokai");
+      editor.session.setMode("ace/mode/python");
+      editor.setShowPrintMargin(false);
+
+      // 2. Get Context (Chat ID)
+      const urlParams = new URLSearchParams(window.location.search);
+      const chatID = urlParams.get("chat_id") || "{{ chat_id }}"; // Fallback to jinja variable
+
+      // 3. Get Hint Logic
+      async function getHint() {
+        const question = document.getElementById("questionText").innerText;
+        const hintBox = document.getElementById("hintBox");
+
+        hintBox.style.display = "block";
+        hintBox.innerText = "Thinking...";
+
+        try {
+          const res = await fetch("/get_coding_hint", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: question }),
+          });
+          const data = await res.json();
+          const rawHint = data.hint || "";
+          const hintHtml = rawHint
+            ? DOMPurify.sanitize(
+                marked.parse(rawHint, { gfm: true, breaks: true })
+              )
+            : "<em>No hint available.</em>";
+          hintBox.innerHTML = "💡 Hint: " + hintHtml;
+        } catch (e) {
+          hintBox.innerText = "Error fetching hint.";
+        }
+      }
+
+      // 4. Run Code Logic
+      async function runCode() {
+        const code = editor.getValue();
+        console.log(
+          "Code being sent (with indentation):",
+          JSON.stringify(code)
+        ); // Debug: Check if \n and spaces are there
+        const question = document.getElementById("questionText").innerText;
+
+        // UI Loading State
+        document.getElementById("runText").style.display = "none";
+        document.getElementById("runSpinner").style.display = "inline-block";
+        document.getElementById("resultsArea").style.display = "none";
+
+        try {
+          const res = await fetch("/evaluate_code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              code: code,
+              language: "python",
+              question: question,
+              chat_id: chatID, // Critical: Links score to session
+            }),
+          });
+
+          const data = await res.json();
+          displayResults(data);
+        } catch (err) {
+          alert("Error executing code: " + err);
+        } finally {
+          document.getElementById("runText").style.display = "inline";
+          document.getElementById("runSpinner").style.display = "none";
+        }
+      }
+
+      function displayResults(data) {
+        const area = document.getElementById("resultsArea");
+        area.style.display = "block";
+
+        // Score Badge
+        const scoreDiv = document.getElementById("scoreDisplay");
+        const score = data.score || 0;
+        const isPass = score >= 7; // Threshold example
+
+        scoreDiv.innerHTML = `<span class="score-badge ${
+          isPass ? "score-pass" : "score-fail"
+        }">Score: ${score}/10</span>`;
+
+        // Feedback
+        const rawFeedback = data.feedback || "";
+        const feedbackHtml = rawFeedback
+          ? DOMPurify.sanitize(
+              marked.parse(rawFeedback, { gfm: true, breaks: true })
+            )
+          : "<em>No feedback provided.</em>";
+        document.getElementById("feedbackText").innerHTML = feedbackHtml;
+
+        // Test Cases
+        const list = document.getElementById("testCasesList");
+        list.innerHTML = "";
+
+        if (data.test_cases_results) {
+          data.test_cases_results.forEach((tc, index) => {
+            const div = document.createElement("div");
+            div.className = "test-case";
+            div.innerHTML = `
+                        <span>Case ${index + 1}</span>
+                        <span class="${tc.passed ? "pass" : "fail"}">${
+              tc.passed ? "PASS" : "FAIL"
+            }</span>
+                    `;
+            list.appendChild(div);
+          });
+        }
+      }
+
+      // 5. Finish Session Logic
+      function finishSession() {
+        if (
+          confirm(
+            "Are you sure you want to finish the interview? This will take you to your dashboard."
+          )
+        ) {
+          window.location.href = "/dashboard";
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sign Up - MOCKMATE</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Roboto, sans-serif;
+        color: #333333;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        --s: 82px;
+        --c1: #b2b2b2;
+        --c2: #ffffff;
+        --c3: #d9d9d9;
+        --_g: var(--c3) 0 120deg, #0000 0;
+        background: conic-gradient(from -60deg at 50% calc(100% / 3), var(--_g)),
+          conic-gradient(from 120deg at 50% calc(200% / 3), var(--_g)),
+          conic-gradient(
+            from 60deg at calc(200% / 3),
+            var(--c3) 60deg,
+            var(--c2) 0 120deg,
+            #0000 0
+          ),
+          conic-gradient(
+            from 180deg at calc(100% / 3),
+            var(--c1) 60deg,
+            var(--_g)
+          ),
+          linear-gradient(
+            90deg,
+            var(--c1) calc(100% / 6),
+            var(--c2) 0 50%,
+            var(--c1) 0 calc(500% / 6),
+            var(--c2) 0
+          );
+        background-size: calc(1.732 * var(--s)) var(--s);
+        transition: background-position 0.3s ease-out;
+      }
+
+      /* Brand Bar */
+      .brand-bar {
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 20px 40px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        text-align: center;
+      }
+
+      .brand-bar h1 {
+        font-size: 32px;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 5px;
+        letter-spacing: 1px;
+      }
+
+      .brand-bar p {
+        font-size: 14px;
+        color: #e0e0e0;
+        font-weight: 400;
+        margin: 0;
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+      }
+
+      /* Form Control */
+      .form-control {
+        background-color: #ffffff;
+        box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6);
+        width: 400px;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        gap: 10px;
+        padding: 25px;
+        border-radius: 8px;
+      }
+
+      .title {
+        font-size: 28px;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .input-field {
+        position: relative;
+        width: 100%;
+      }
+
+      .input {
+        margin-top: 15px;
+        width: 100%;
+        outline: none;
+        border-radius: 8px;
+        height: 45px;
+        border: 1.5px solid #ecedec;
+        background: transparent;
+        padding-left: 10px;
+      }
+
+      .input:focus {
+        border: 1.5px solid #2d79f3;
+      }
+
+      .input-field .label {
+        position: absolute;
+        top: 25px;
+        left: 15px;
+        color: #ccc;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      .input-field .input:focus ~ .label,
+      .input-field .input:valid ~ .label {
+        top: 5px;
+        left: 5px;
+        font-size: 12px;
+        color: #2d79f3;
+        background-color: #ffffff;
+        padding-left: 5px;
+        padding-right: 5px;
+      }
+
+      .submit-btn {
+        margin-top: 30px;
+        height: 55px;
+        background: #f2f2f2;
+        border-radius: 11px;
+        border: 0;
+        outline: none;
+        color: #ffffff;
+        font-size: 18px;
+        font-weight: 700;
+        background: linear-gradient(
+          180deg,
+          #363636 0%,
+          #1b1b1b 50%,
+          #000000 100%
+        );
+        box-shadow: 0px 0px 0px 0px #ffffff, 0px 0px 0px 0px #000000;
+        transition: all 0.3s cubic-bezier(0.15, 0.83, 0.66, 1);
+        cursor: pointer;
+      }
+
+      .submit-btn:hover {
+        box-shadow: 0px 0px 0px 2px #ffffff, 0px 0px 0px 4px #0000003a;
+      }
+
+      .login-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+      }
+
+      .login-link a {
+        color: #2d79f3;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .login-link a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Brand Bar -->
+    <div class="brand-bar">
+      <h1>MOCKMATE</h1>
+      <p>The AI coach that turns practice into offers.</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <form class="form-control" method="POST">
+        <p class="title">Create Account</p>
+
+        <div class="input-field">
+          <input type="text" name="username" value="{{ username }}" required />
+          <label class="label">Username</label>
+        </div>
+
+        <div class="input-field">
+          <input
+            type="password"
+            name="password"
+            value="{{ password }}"
+            required
+          />
+          <label class="label">Password</label>
+        </div>
+
+        <button type="submit" class="submit-btn">Sign Up</button>
+
+        <p class="login-link">
+          Already have an account? <a href="/login">Login</a>
+        </p>
+      </form>
+    </div>
+
+    <script>
+      // Subtle background parallax effect
+      document.addEventListener("mousemove", (e) => {
+        const moveX = (e.clientX / window.innerWidth - 0.5) * 20;
+        const moveY = (e.clientY / window.innerHeight - 0.5) * 20;
+
+        document.body.style.backgroundPosition = `${moveX}px ${moveY}px`;
+      });
+    </script>
+  </body>
+</html>

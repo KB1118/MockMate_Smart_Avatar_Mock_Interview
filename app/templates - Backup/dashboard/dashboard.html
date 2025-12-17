@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - MOCKMATE</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+
+    <style>
+      /* --- CSS VARIABLES & RESET --- */
+      :root {
+        --sidebar-width: 280px;
+        --primary: #007acc;
+        --primary-hover: #0062a3;
+        --bg-body: #f4f6f9;
+        --bg-card: #ffffff;
+        --text-main: #2c3e50;
+        --text-muted: #7f8c8d;
+        --border: #e1e4e8;
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* Main scroll handled inside grid */
+      }
+
+      /* --- HEADER --- */
+      .brand-bar {
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        padding: 0 24px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between; /* Ensure space between left and right */
+        flex-shrink: 0;
+        z-index: 10;
+      }
+      .brand-logo {
+        font-weight: 800;
+        font-size: 20px;
+        color: var(--primary);
+        letter-spacing: 1px;
+        text-decoration: none;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 16px; /* Space between welcome text and logout button */
+      }
+
+      .logout-btn {
+        background: #dc3545; /* Bootstrap danger color */
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .logout-btn:hover {
+        background: #c82333; /* Darker red on hover */
+      }
+
+      /* --- LAYOUT GRID --- */
+      .dashboard-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* --- SIDEBAR (History) --- */
+      .sidebar {
+        width: var(--sidebar-width);
+        background: var(--bg-card);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .sidebar-header {
+        padding: 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .session-list {
+        list-style: none;
+        flex: 1;
+      }
+
+      .session-item {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.2s;
+        position: relative;
+      }
+
+      .session-item:hover {
+        background: #f8f9fa;
+      }
+      .session-item.active {
+        background: #eef7fe;
+        border-left: 4px solid var(--primary);
+      }
+
+      .session-role {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 4px;
+        color: var(--text-main);
+      }
+      .session-date {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .session-badge {
+        display: inline-block;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-top: 6px;
+        background: #eee;
+        color: #555;
+      }
+      .badge-score {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      /* --- MAIN CONTENT --- */
+      .main-content {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+        position: relative;
+      }
+
+      /* SECTIONS */
+      .section-view {
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+      .section-view.active {
+        display: block;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* --- CARDS & WIDGETS --- */
+      .card {
+        background: var(--bg-card);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 20px;
+        margin-bottom: 24px;
+        border: 1px solid var(--border);
+      }
+
+      h2 {
+        font-size: 22px;
+        margin-bottom: 16px;
+        color: var(--text-main);
+      }
+      h3 {
+        font-size: 16px;
+        margin-bottom: 12px;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      /* Aggregate Stats Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .stat-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--primary);
+      }
+      .stat-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      /* New Session List */
+      .jd-list {
+        display: grid;
+        gap: 12px;
+      }
+      .jd-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .btn-primary:hover {
+        background: var(--primary-hover);
+      }
+
+      .btn-upload {
+        display: inline-block;
+        margin-top: 10px;
+        color: var(--primary);
+        font-size: 14px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      /* --- DETAIL VIEW --- */
+      .detail-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      .back-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .transcript-box {
+        background: #f8f9fa;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 16px;
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: monospace;
+        white-space: pre-wrap;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .analysis-box {
+        background: #fff;
+        border-left: 4px solid var(--primary);
+        padding: 16px;
+        margin-bottom: 24px;
+        line-height: 1.6;
+      }
+
+      .analysis-box table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+
+      .analysis-box th,
+      .analysis-box td {
+        border: 1px solid var(--border);
+        padding: 8px;
+        text-align: left;
+        font-size: 13px;
+      }
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="brand-bar">
+      <a href="#" class="brand-logo">MOCKMATE</a>
+      <div class="header-right">
+        <div style="font-size: 14px">
+          Welcome, {{ session.get('username', 'User') }}
+        </div>
+        <form
+          action="{{ url_for('auth.logout') }}"
+          method="get"
+          style="display: inline"
+        >
+          <button type="submit" class="logout-btn">Logout</button>
+        </form>
+      </div>
+    </header>
+
+    <div class="dashboard-container">
+      <aside class="sidebar">
+        <div class="sidebar-header">Interview History</div>
+        <ul class="session-list" id="sessionList">
+          <li style="padding: 16px; color: #999; text-align: center">
+            Loading history...
+          </li>
+        </ul>
+      </aside>
+
+      <main class="main-content">
+        <div id="aggregate-view" class="section-view active">
+          <h2>Overview</h2>
+
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+              <div class="stat-value" id="aggTech">-</div>
+              <div class="stat-label">Avg Technical</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="aggEmo">-</div>
+              <div class="stat-label">Avg Emotional</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="aggCode">-</div>
+              <div class="stat-label">Avg Code Score</div>
+            </div>
+          </div>
+
+          <div class="card" id="chartCard">
+            <h3>Performance Trends</h3>
+            <div style="height: 250px">
+              <canvas id="performanceChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Start New Interview</h3>
+            <p style="margin-bottom: 12px; font-size: 14px; color: #666">
+              Select a Job Description to begin a new session.
+            </p>
+
+            <div class="jd-list">
+              {% if jds %} {% for jd in jds %}
+              <div class="jd-item">
+                <div>
+                  <strong style="display: block">{{ jd.filename }}</strong>
+                  <span style="font-size: 12px; color: #999"
+                    >Uploaded: {{ jd.uploaded_at }}</span
+                  >
+                </div>
+                <a
+                  href="{{ url_for('dashboard.analyze', jd_id=jd.id) }}"
+                  class="btn-primary"
+                  >Analyze Resume</a
+                >
+              </div>
+              {% endfor %} {% else %}
+              <div
+                style="
+                  padding: 10px;
+                  background: #f9f9f9;
+                  border-radius: 4px;
+                  text-align: center;
+                "
+              >
+                No JDs found. Please upload one.
+              </div>
+              {% endif %}
+            </div>
+
+            <a href="{{ url_for('dashboard.upload_jd') }}" class="btn-upload"
+              >+ Upload New Job Description</a
+            >
+          </div>
+        </div>
+
+        <div id="detail-view" class="section-view">
+          <div class="detail-header">
+            <h2 id="detailTitle">Session Details</h2>
+            <button class="back-btn" onclick="showAggregate()">
+              ← Back to Dashboard
+            </button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="detTech">-</div>
+              <div class="stat-label">Technical</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="detEmo">-</div>
+              <div class="stat-label">Emotional</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="detCode">-</div>
+              <div class="stat-label">Code Score</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>AI Analysis & Feedback</h3>
+            <div class="analysis-box" id="detAnalysis">Loading analysis...</div>
+          </div>
+
+          <div class="card">
+            <h3>Transcript</h3>
+            <div class="transcript-box" id="detTranscript">
+              Loading transcript...
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      // 1. Fetch Data on Load
+      document.addEventListener("DOMContentLoaded", () => {
+        fetchSessionData();
+      });
+
+      async function fetchSessionData() {
+        try {
+          const response = await fetch("/get_session_data");
+          const data = await response.json();
+
+          renderSidebar(data.sessions);
+          renderAggregate(data.sessions, data.evaluation_scores);
+        } catch (error) {
+          console.error("Error fetching sessions:", error);
+          document.getElementById("sessionList").innerHTML =
+            '<li style="padding:16px; color:red;">Error loading history.</li>';
+        }
+      }
+
+      // 2. Render Sidebar
+      function renderSidebar(sessions) {
+        const list = document.getElementById("sessionList");
+        list.innerHTML = "";
+
+        if (!sessions || sessions.length === 0) {
+          list.innerHTML =
+            '<li class="empty-state">No sessions yet.<br><small>Start one on the right!</small></li>';
+          return;
+        }
+
+        sessions.forEach((session) => {
+          const li = document.createElement("li");
+          li.className = "session-item";
+          li.onclick = () => loadSessionDetail(session.chat_id);
+
+          // Format Date
+          const date = new Date(session.date).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          });
+
+          // Determine Badge (if score exists)
+          let badgeHtml = "";
+          if (session.scores.technical !== "-") {
+            badgeHtml = `<span class="session-badge badge-score">Tech: ${session.scores.technical}/10</span>`;
+          }
+
+          li.innerHTML = `
+                    <div class="session-role">${session.role_name}</div>
+                    <div class="session-date">${date}</div>
+                    ${badgeHtml}
+                `;
+          list.appendChild(li);
+        });
+      }
+
+      // 3. Render Aggregate View (Charts & Averages)
+      function renderAggregate(sessions, scores) {
+        // Calculate Averages
+        const techs = scores
+          .filter((s) => s.score_type === "technical")
+          .map((s) => s.score_value);
+        const emos = scores
+          .filter((s) => s.score_type === "emotional")
+          .map((s) => s.score_value);
+        const codes = scores
+          .filter((s) => s.score_type === "code")
+          .map((s) => s.score_value);
+
+        const avg = (arr) =>
+          arr.length
+            ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1)
+            : "-";
+
+        document.getElementById("aggTech").innerText = avg(techs);
+        document.getElementById("aggEmo").innerText = avg(emos);
+        document.getElementById("aggCode").innerText = avg(codes);
+
+        // Hide Chart if no data
+        if (scores.length === 0) {
+          document.getElementById("chartCard").style.display = "none";
+          return;
+        }
+
+        // Build Chart
+        const ctx = document
+          .getElementById("performanceChart")
+          .getContext("2d");
+        if (chartInstance) chartInstance.destroy();
+
+        // Prepare Chart Data (Time series)
+        // We need to map scores to session dates or indices
+        const labels = sessions.map((s, i) => `Session ${sessions.length - i}`); // Reverse chronological
+        const techData = sessions.map((s) =>
+          s.scores.technical === "-" ? null : s.scores.technical
+        );
+        const emoData = sessions.map((s) =>
+          s.scores.emotional === "-" ? null : s.scores.emotional
+        );
+
+        chartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels.reverse(),
+            datasets: [
+              {
+                label: "Technical",
+                data: techData.reverse(),
+                borderColor: "#007acc",
+                tension: 0.3,
+              },
+              {
+                label: "Emotional",
+                data: emoData.reverse(),
+                borderColor: "#e74c3c",
+                tension: 0.3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, max: 10 } },
+          },
+        });
+      }
+
+      // 4. Load Detail View
+      async function loadSessionDetail(chatId) {
+        // UI Toggle
+        document.getElementById("aggregate-view").classList.remove("active");
+        document.getElementById("detail-view").classList.add("active");
+
+        // Highlight Sidebar
+        document
+          .querySelectorAll(".session-item")
+          .forEach((el) => el.classList.remove("active"));
+        // (Optional: Find the clicked element and add active class - simpler to skip for now)
+
+        // Reset Content
+        document.getElementById("detAnalysis").innerText = "Loading...";
+        document.getElementById("detTranscript").innerText = "Loading...";
+
+        try {
+          const res = await fetch(`/get_session_details/${chatId}`);
+          const data = await res.json();
+
+          // Fill Title
+          document.getElementById("detailTitle").innerText = data.role_name;
+
+          // Fill Scores
+          document.getElementById("detTech").innerText =
+            data.evaluation_scores.technical || "-";
+          document.getElementById("detEmo").innerText =
+            data.evaluation_scores.emotional || "-";
+          document.getElementById("detCode").innerText =
+            data.evaluation_scores.code || "-";
+
+          // Fill Analysis
+          const rawAnalysis = data.analysis || "";
+          const analysisHtml = rawAnalysis
+            ? DOMPurify.sanitize(
+                marked.parse(rawAnalysis, { gfm: true, breaks: true })
+              )
+            : "<em>No analysis generated yet.</em>";
+          document.getElementById("detAnalysis").innerHTML = analysisHtml;
+
+          // Fill Transcript
+          const transcriptText = data.transcript
+            .map(
+              (t) =>
+                `[${new Date(
+                  t.timestamp
+                ).toLocaleTimeString()}] ${t.role.toUpperCase()}: ${t.message}`
+            )
+            .join("\n\n");
+          document.getElementById("detTranscript").innerText =
+            transcriptText || "No transcript available.";
+        } catch (err) {
+          console.error(err);
+          document.getElementById("detAnalysis").innerText =
+            "Error loading details.";
+        }
+      }
+
+      // 5. Back Button
+      function showAggregate() {
+        document.getElementById("detail-view").classList.remove("active");
+        document.getElementById("aggregate-view").classList.add("active");
+      }
+    </script>
+  </body>
+</html>

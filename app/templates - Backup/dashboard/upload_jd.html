@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Upload JD - MOCKMATE</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Roboto, sans-serif;
+        color: #333333;
+        min-height: 100vh;
+        --u: 10px;
+        --c1: #fbf9fe;
+        --c2: #02b6e7;
+        --c3: #00699b;
+        --gp: 50% / calc(var(--u) * 16.8) calc(var(--u) * 12.9);
+        background: conic-gradient(
+              from 122deg at 50% 85.15%,
+              var(--c2) 0 58deg,
+              var(--c3) 0 116deg,
+              #fff0 0 100%
+            )
+            var(--gp),
+          conic-gradient(
+              from 122deg at 50% 72.5%,
+              var(--c1) 0 116deg,
+              #fff0 0 100%
+            )
+            var(--gp),
+          conic-gradient(
+              from 58deg at 82.85% 50%,
+              var(--c3) 0 64deg,
+              #fff0 0 100%
+            )
+            var(--gp),
+          conic-gradient(
+              from 58deg at 66.87% 50%,
+              var(--c1) 0 64deg,
+              var(--c2) 0 130deg,
+              #fff0 0 100%
+            )
+            var(--gp),
+          conic-gradient(
+              from 238deg at 17.15% 50%,
+              var(--c2) 0 64deg,
+              #fff0 0 100%
+            )
+            var(--gp),
+          conic-gradient(
+              from 172deg at 33.13% 50%,
+              var(--c3) 0 66deg,
+              var(--c1) 0 130deg,
+              #fff0 0 100%
+            )
+            var(--gp),
+          linear-gradient(98deg, var(--c3) 0 15%, #fff0 calc(15% + 1px) 100%)
+            var(--gp),
+          linear-gradient(-98deg, var(--c2) 0 15%, #fff0 calc(15% + 1px) 100%)
+            var(--gp),
+          conic-gradient(
+              from -58deg at 50.25% 14.85%,
+              var(--c3) 0 58deg,
+              var(--c2) 0 116deg,
+              #fff0 0 100%
+            )
+            var(--gp),
+          conic-gradient(
+              from -58deg at 50% 28.125%,
+              var(--c1) 0 116deg,
+              #fff0 0 100%
+            )
+            var(--gp),
+          linear-gradient(90deg, var(--c2) 0 50%, var(--c3) 0 100%) var(--gp);
+        transition: background-position 0.3s ease-out;
+      }
+
+      /* Full-page flex wrapper to handle centering */
+      .page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px; /* prevents touching edges on very small screens */
+      }
+
+      .container {
+        width: 100%;
+        max-width: 420px;
+        padding: 32px 30px 28px;
+
+        /* Hazed glass card */
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(18px) saturate(180%) brightness(115%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%) brightness(115%);
+
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        border-radius: 18px;
+
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1),
+          inset 0 0 35px rgba(255, 255, 255, 0.35);
+      }
+
+      h2 {
+        text-align: center;
+        margin: 0 0 24px;
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+
+      /* Hide native file input */
+      input[type="file"] {
+        display: none;
+      }
+
+      /* Custom "Choose file" button */
+      .custom-file-btn {
+        display: inline-block;
+        padding: 12px 16px;
+        width: 100%;
+        text-align: center;
+
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(4px);
+        border: 1px solid #dddddd;
+        border-radius: 12px;
+
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: box-shadow 0.2s ease;
+      }
+
+      .custom-file-btn:hover {
+        box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.25);
+      }
+
+      .file-name {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #333333;
+        opacity: 0.85;
+        text-align: left;
+        word-break: break-all;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 22px;
+        background: #007acc;
+        color: #ffffff;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+      }
+
+      button:hover {
+        background: #0063a8;
+        box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
+      }
+
+      p {
+        margin-top: 22px;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      a {
+        color: #007acc;
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+
+    <script>
+      function showFileName(input) {
+        const fileNameDisplay = document.getElementById("file-name-display");
+        if (input.files.length > 0) {
+          fileNameDisplay.textContent = input.files[0].name;
+        } else {
+          fileNameDisplay.textContent = "";
+        }
+      }
+
+      // Subtle background parallax effect
+      document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("mousemove", (e) => {
+          const moveX = (e.clientX / window.innerWidth - 0.5) * 20;
+          const moveY = (e.clientY / window.innerHeight - 0.5) * 20;
+
+          document.body.style.backgroundPosition = `${moveX}px ${moveY}px`;
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+    <div class="page">
+      <div class="container">
+        <h2>Upload Job Description (PDF)</h2>
+
+        <form method="POST" enctype="multipart/form-data">
+          <label>Select JD PDF:</label>
+
+          <label class="custom-file-btn">
+            Choose PDF
+            <input
+              type="file"
+              name="jd_file"
+              accept="application/pdf"
+              required
+              onchange="showFileName(this)"
+            />
+          </label>
+
+          <div id="file-name-display" class="file-name"></div>
+
+          <button type="submit">Upload</button>
+        </form>
+
+        <p><a href="{{ url_for('dashboard.index') }}">Back to Dashboard</a></p>
+      </div>
+    </div>
+  </body>
+</html>

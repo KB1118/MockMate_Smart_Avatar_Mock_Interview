@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interview Room - MOCKMATE</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+
+    <!-- Styles from index1.html -->
+    <style>
+      :root {
+        --primary: #007acc;
+        --danger: #ef4444;
+        --bg-dark: #0f172a;
+        --bg-stage: #000000;
+        --text-light: #f1f5f9;
+        --border-glass: rgba(255, 255, 255, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Segoe UI", Roboto, sans-serif;
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      /* --- HEADER --- */
+      .header-bar {
+        width: 100%;
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.8);
+        border-bottom: 1px solid var(--border-glass);
+        z-index: 10;
+      }
+      .brand {
+        font-weight: 700;
+        font-size: 18px;
+        color: #fff;
+        letter-spacing: 1px;
+      }
+      .status-badge {
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #64748b;
+      }
+      .status-active .status-dot {
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+      }
+      .status-listening .status-dot {
+        background: #f59e0b;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      /* --- MAIN STAGE (Avatar + PiP) --- */
+      .stage-container {
+        position: relative;
+        flex: 1;
+        width: 100%;
+        max-width: 1200px;
+        margin: 20px auto;
+        background: var(--bg-stage);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--border-glass);
+      }
+
+      /* Avatar Video (Hero) */
+      #avatarVideo {
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* Keeps avatar aspect ratio correct */
+        display: block;
+      }
+
+      /* User Video (Picture-in-Picture) */
+      .pip-container {
+        position: absolute;
+        bottom: 24px;
+        right: 24px;
+        width: 240px;
+        aspect-ratio: 16/9;
+        background: #222;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        z-index: 20;
+        transition: transform 0.3s ease;
+      }
+      .pip-container:hover {
+        transform: scale(1.05);
+      }
+
+      #userWebcamVideo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1); /* Mirror user video */
+      }
+
+      /* --- CONTROLS --- */
+      .control-bar {
+        display: flex;
+        gap: 16px;
+        padding: 24px;
+        width: 100%;
+        justify-content: center;
+        background: linear-gradient(to top, var(--bg-dark), transparent);
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border-radius: 50px;
+        border: none;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn-start {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-start:hover {
+        background: #0063a8;
+        transform: translateY(-2px);
+      }
+
+      .btn-stop {
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+      .btn-stop:hover {
+        background: rgba(239, 68, 68, 0.3);
+      }
+
+      .btn-coding {
+        background: #fff;
+        color: #0f172a;
+        margin-left: 20px; /* Separate from session controls */
+      }
+      .btn-coding:hover {
+        background: #e2e8f0;
+      }
+
+      /* Hidden utilities */
+      .hidden {
+        display: none !important;
+      }
+      #status-log {
+        display: none;
+      } /* Strictly hidden for immersion */
+
+      /* Instructions Overlay (Fades out) */
+      .instruction-overlay {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        color: #cbd5e1;
+        pointer-events: none;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="header-bar">
+      <div class="brand">MOCKMATE</div>
+      <div class="status-badge" id="connectionStatus">
+        <div class="status-dot"></div>
+        <span id="statusText">Ready to Connect</span>
+      </div>
+    </div>
+
+    <div class="stage-container">
+      <video id="avatarVideo" autoplay playsinline></video>
+
+      <div class="pip-container">
+        <video id="userWebcamVideo" autoplay playsinline muted></video>
+      </div>
+
+      <div class="instruction-overlay" id="instructionText">
+        Click "Start Session" to begin.
+      </div>
+    </div>
+
+    <div class="control-bar">
+      <button id="startSession" class="btn btn-start" onclick="startSession()">
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+          />
+        </svg>
+        Start Session
+      </button>
+
+      <button
+        id="stopSession"
+        class="btn btn-stop"
+        onclick="stopSession()"
+        disabled
+      >
+        End Call
+      </button>
+
+      <button class="btn btn-coding" onclick="proceedToCoding()">
+        Proceed to Coding Round →
+      </button>
+    </div>
+
+    <div id="status-log"></div>
+    <div id="emotion-display" class="hidden">Emotion: N/A</div>
+    <canvas id="emotionCanvas" class="hidden"></canvas>
+
+    <!-- Working JS from index.html, adapted for index1.html's elements and functions -->
+    <script>
+      // Get Chat ID from URL (Critical for session linking)
+      const urlParams = new URLSearchParams(window.location.search);
+      let chatID =
+        urlParams.get("chat_id") || "{{ session.get('chat_id', '') }}";
+
+      // Start a new chat session if no chat_id
+      if (!chatID) {
+        fetch("/start_chat_session", { method: "POST" })
+          .then((r) => r.json())
+          .then((d) => {
+            chatID = d.chat_id;
+          });
+      }
+
+      /* --- GLOBAL VARIABLES --- */
+      const { Room, RoomEvent, Track, TrackEvent } = LivekitClient;
+      let room = null;
+      let currentSessionId = null;
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let isRecording = false;
+      let sessionActive = false;
+      let emotionInterval = null; // NEW: Timer for emotion capture loop
+      let currentEmotion = "N/A"; // NEW: To display the last detected emotion
+
+      /* --- DOM ELEMENTS --- */
+      const videoElement = document.getElementById("avatarVideo");
+      const userVideoElement = document.getElementById("userWebcamVideo"); // NEW
+      const emotionCanvas = document.getElementById("emotionCanvas"); // NEW (add this hidden canvas if not present)
+      const emotionDisplay = document.getElementById("emotion-display"); // NEW (add this if not present)
+      const statusText = document.getElementById("statusText");
+      const instructionText = document.getElementById("instructionText");
+      const startBtn = document.getElementById("startSession");
+      const stopBtn = document.getElementById("stopSession");
+      const statusLog = document.getElementById("status-log");
+
+      /* --- INITIALIZATION & UI --- */
+      function loadAnalytics() {
+        if (chatID) {
+          fetch(`/analytics/${chatID}`)
+            .then((r) => r.json())
+            .then((d) => {
+              document.getElementById("analysis_box").innerText = d.analysis;
+            });
+        }
+      }
+
+      // Start a new chat session when the page loads
+      fetch("/start_chat_session", { method: "POST" })
+        .then((r) => r.json())
+        .then((d) => (window.currentChatID = d.chat_id));
+
+      function updateStatus(state, message = "") {
+        // Adapted from index.html's updateUI to match index1.html's updateStatus
+        startBtn.disabled = sessionActive;
+        stopBtn.disabled = !sessionActive;
+
+        switch (state) {
+          case "connecting":
+            statusText.textContent = "Connecting to HeyGen/LiveKit...";
+            break;
+          case "active":
+            sessionActive = true;
+            statusText.textContent = "Live Session";
+            instructionText.innerText = "Hold SPACEBAR to speak.";
+            startEmotionCaptureLoop(); // NEW: Start emotion tracking
+            break;
+          case "listening":
+            statusText.textContent = "Listening...";
+            instructionText.innerText = "Release SPACEBAR to send.";
+            stopEmotionCaptureLoop(); // NEW: Stop tracking while speaking
+            break;
+          case "processing":
+            statusText.textContent = "Thinking...";
+            instructionText.innerText = "Avatar is processing...";
+            break;
+          case "speaking":
+            statusText.textContent = "Avatar Speaking";
+            instructionText.innerText = "Listen to the avatar...";
+            stopEmotionCaptureLoop(); // NEW: Stop tracking while waiting for Avatar's turn
+            break;
+          case "closed":
+            sessionActive = false;
+            isRecording = false;
+            statusText.textContent = "Session Closed.";
+            stopEmotionCaptureLoop(); // NEW: Stop tracking on close
+            break;
+          case "error":
+            sessionActive = false;
+            statusText.textContent = "ERROR (Check Console)";
+            statusLog.innerHTML += `\n<strong style="color: red;">Error: ${message}</strong>`;
+            stopEmotionCaptureLoop(); // NEW: Stop tracking on error
+            break;
+        }
+      }
+
+      function logMessage(speaker, text) {
+        if (!text) return;
+        const prefix = speaker === "User" ? "You:" : "Avatar:";
+        statusLog.innerHTML += `<strong>${prefix}</strong> ${text}\n\n`;
+        statusLog.scrollTop = statusLog.scrollHeight;
+      }
+
+      /* --- SESSION CONTROL --- */
+      async function startSession() {
+        if (room) return;
+        updateStatus("connecting");
+
+        try {
+          const response = await fetch("/start_session", { method: "POST" });
+          const data = await response.json();
+
+          if (!response.ok) throw new Error(data.error);
+          currentSessionId = data.session_id;
+
+          await connectLiveKit(data.livekit_url, data.livekit_token);
+          await initializeMediaRecorder();
+          updateStatus("active");
+        } catch (error) {
+          console.error(error);
+          updateStatus("error", error.message);
+        }
+      }
+
+      async function stopSession(cleanup = true) {
+        if (room) {
+          room.disconnect();
+          room = null;
+        }
+        if (videoElement.srcObject) {
+          videoElement.srcObject.getTracks().forEach((t) => t.stop());
+          videoElement.srcObject = null;
+        }
+        if (userVideoElement.srcObject) {
+          // NEW: Stop user camera stream
+          userVideoElement.srcObject.getTracks().forEach((t) => t.stop());
+          userVideoElement.srcObject = null;
+        }
+        if (cleanup && currentSessionId) {
+          await fetch("/stop_session", { method: "POST" });
+        }
+        currentSessionId = null;
+        updateStatus("closed");
+      }
+
+      window.onbeforeunload = () => sessionActive && stopSession();
+
+      /* --- LIVEKIT CONNECTION --- */
+      async function connectLiveKit(url, token) {
+        room = new Room();
+        room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+        room.on(RoomEvent.Disconnected, () => stopSession(false));
+
+        await room.connect(url, token);
+        videoElement.muted = false;
+      }
+
+      function handleTrackSubscribed(track) {
+        if (
+          track.kind === Track.Kind.Video ||
+          track.kind === Track.Kind.Audio
+        ) {
+          track.attach(videoElement);
+        }
+        if (track.kind === Track.Kind.Audio) {
+          track.on(TrackEvent.AudioPlaybackStarted, () =>
+            updateStatus("speaking")
+          );
+          track.on(
+            TrackEvent.AudioPlaybackEnded,
+            () => sessionActive && updateStatus("active")
+          );
+        }
+      }
+
+      /* --- MEDIA RECORDER & INPUT HANDLER --- */
+      async function initializeMediaRecorder() {
+        // MODIFIED: Request both audio and video
+        const fullStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true,
+        });
+
+        // 1. Display the full video stream (with audio muted) to the user
+        userVideoElement.srcObject = fullStream;
+        userVideoElement.muted = true; // Make sure the video element is muted!
+
+        // 2. NEW: Create a new, audio-only stream for the recorder
+        const audioStream = new MediaStream();
+        fullStream.getAudioTracks().forEach((track) => {
+          audioStream.addTrack(track);
+        });
+
+        // 3. Pass the audio-only stream to the MediaRecorder
+        mediaRecorder = new MediaRecorder(audioStream, {
+          mimeType: "audio/webm",
+        });
+
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+        mediaRecorder.onstop = sendAudioToServer;
+
+        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keyup", handleKeyUp);
+      }
+
+      function handleKeyDown(event) {
+        if (event.key === " " && sessionActive && !isRecording) {
+          event.preventDefault();
+
+          try {
+            audioChunks = [];
+            mediaRecorder.start();
+            isRecording = true; // This now runs even if start() fails
+            updateStatus("listening");
+          } catch (e) {
+            console.error("Failed to start MediaRecorder:", e);
+            updateStatus("error", e.message);
+          }
+        }
+      }
+
+      function handleKeyUp(event) {
+        if (event.key === " " && sessionActive && isRecording) {
+          event.preventDefault();
+          mediaRecorder.stop();
+          isRecording = false;
+          updateStatus("processing");
+        }
+      }
+
+      /* --- EMOTION TRACKING FUNCTIONS (NEW) --- */
+
+      function startEmotionCaptureLoop() {
+        if (emotionInterval) return; // Already running
+
+        // Capture frame and send to server every 200ms (5 FPS)
+        emotionInterval = setInterval(captureAndSendFrame, 200);
+        console.log("Emotion tracking started.");
+      }
+
+      function stopEmotionCaptureLoop() {
+        if (emotionInterval) {
+          clearInterval(emotionInterval);
+          emotionInterval = null;
+          console.log("Emotion tracking stopped.");
+        }
+      }
+
+      function captureAndSendFrame() {
+        if (!userVideoElement.srcObject) return;
+
+        // 1. Draw frame to canvas
+        const video = userVideoElement;
+        const canvas = emotionCanvas;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // 2. Convert canvas to Base64 (JPEG format)
+        const frameBase64 = canvas.toDataURL("image/jpeg", 0.8);
+
+        // 3. Send Base64 to Flask server
+        fetch("/track_emotion", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ frame: frameBase64 }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data.success) {
+              console.error("Server failed to process emotion frame.");
+            }
+            // Optionally update emotion display with the latest detected emotion
+            // Requires a new route to get the last detected emotion, or modifying /track_emotion
+            // For now, we only get the average at the time of sending audio.
+          })
+          .catch((error) => {
+            console.error("Error sending frame to server:", error);
+          });
+      }
+
+      /* --- INTERACTION LOOP --- */
+
+      async function sendAudioToServer() {
+        if (!audioChunks.length) {
+          updateStatus("active");
+          return;
+        }
+
+        // 1. Get the average emotion data collected
+        let emotionContext = "{}";
+
+        // --- START OF NEW TRY/CATCH BLOCK ---
+        try {
+          // STEP 1: Get the average emotion data
+          const avgResponse = await fetch("/get_and_clear_emotion_avg");
+          if (!avgResponse.ok) {
+            throw new Error(
+              `Failed to fetch emotion data: ${avgResponse.statusText}`
+            );
+          }
+          const avgData = await avgResponse.json();
+          emotionContext = JSON.stringify(avgData);
+
+          // Update the display with the dominant emotion from the data sent
+          const dominant = Object.keys(avgData).reduce(
+            (a, b) => (avgData[a] > avgData[b] ? a : b),
+            "neutral"
+          );
+          emotionDisplay.textContent = `Emotion: ${dominant.toUpperCase()}`;
+
+          // STEP 2: Prepare audio blob and form data
+          const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "audio.wav");
+          formData.append("emotion_context", emotionContext);
+
+          // STEP 3: Send audio and emotion data to /interact
+          const response = await fetch("/interact", {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error);
+
+          logMessage("User", data.user_text);
+          logMessage("Avatar", data.gemini_text);
+
+          if (!data.gemini_text) updateStatus("active");
+        } catch (error) {
+          console.error("Error in sendAudioToServer:", error);
+          // Show the error in the UI
+          updateStatus("error", error.message);
+        }
+        // --- END OF NEW TRY/CATCH BLOCK ---
+      }
+
+      function proceedToCoding() {
+        // Ensure we stop the call first
+        stopSession();
+        // Redirect with Chat ID to link the coding score
+        window.location.href = `/coding_round?chat_id=${chatID}`;
+      }
+
+      updateStatus("closed");
+    </script>
+  </body>
+</html>
