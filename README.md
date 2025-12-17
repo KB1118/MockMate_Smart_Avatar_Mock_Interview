@@ -1,1 +1,0 @@
-# MockMate_Smart_Avatar_Mock_Interview
